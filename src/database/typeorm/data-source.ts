@@ -8,6 +8,8 @@ import type { PostgresConnectionOptions } from 'typeorm/driver/postgres/Postgres
 import { env } from '@/config/env/index.js'
 import { Product } from '@/database/entities/product.entity.js'
 
+import { LoggingRedisQueryResultCache } from './logging-redis-cache.js'
+
 const TTL_REDIS_MS = 30_000 // 30 s
 
 const cacheOptions: NonNullable<PostgresConnectionOptions['cache']> = {
@@ -15,6 +17,8 @@ const cacheOptions: NonNullable<PostgresConnectionOptions['cache']> = {
   alwaysEnabled: false,
   ignoreErrors: true,
   duration: TTL_REDIS_MS,
+  // Provider que loga cache hit/miss (com reqId via AsyncLocalStorage).
+  provider: connection => new LoggingRedisQueryResultCache(connection, 'ioredis'),
   options: {
     host: env.REDIS_HOST,
     port: env.REDIS_PORT,

@@ -4,6 +4,7 @@ import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 
 import { loggerOptions } from '@/config/logger/index.js'
+import { registerRequestContext } from '@/config/request-context.js'
 import { registerSwagger } from '@/config/swagger/index.js'
 import { registerRoutes } from '@/http/routes.js'
 
@@ -17,6 +18,7 @@ export function server() {
     app.setValidatorCompiler(validatorCompiler)
     app.setSerializerCompiler(serializerCompiler)
 
+    registerRequestContext(app)
     registerSwagger(app)
     app.register(registerRoutes)
 
