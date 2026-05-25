@@ -10,13 +10,12 @@ import { Product } from '@/database/entities/product.entity.js'
 
 import { LoggingRedisQueryResultCache } from './logging-redis-cache.js'
 
-const TTL_REDIS_MS = 30_000 // 30 s
-
 const cacheOptions: NonNullable<PostgresConnectionOptions['cache']> = {
   type: 'ioredis',
   alwaysEnabled: false,
   ignoreErrors: true,
-  duration: TTL_REDIS_MS,
+  // TTL padrão; queries passam o mesmo valor explicitamente em .cache().
+  duration: env.CACHE_TTL_MS,
   // Provider que loga cache hit/miss (com reqId via AsyncLocalStorage).
   provider: connection => new LoggingRedisQueryResultCache(connection, 'ioredis'),
   options: {
