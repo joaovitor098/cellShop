@@ -27,6 +27,18 @@ Arquitetura em camadas. Controllers fazem a composição; tudo abaixo depende de
 - **DTOs:** `src/dtos/`.
 - **Validação:** Zod valida toda entrada dos endpoints (params, query, body) e valida também os payloads de resposta.
 
+## Documentação de features
+
+Ao criar **spec**, **plan** e **tasks** de uma feature, documente cada um como `.md` dentro de uma subpasta com o nome da feature (kebab-case) em `docs/`:
+
+```
+./docs/<nome-da-feature>/spec.md
+./docs/<nome-da-feature>/plan.md
+./docs/<nome-da-feature>/tasks.md
+```
+
+Os três arquivos no mesmo diretório por feature.
+
 ## Comandos
 
 ```bash

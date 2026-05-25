@@ -1,0 +1,502 @@
+[
+  {
+    "name": "iPhone 10 64GB",
+    "price": 99900,
+    "quantity": 10
+  },
+  {
+    "name": "Galaxy S 10 128GB",
+    "price": 109600,
+    "quantity": 17
+  },
+  {
+    "name": "Galaxy A 10 256GB",
+    "price": 119300,
+    "quantity": 24
+  },
+  {
+    "name": "Redmi Note 10 512GB",
+    "price": 129100,
+    "quantity": 31
+  },
+  {
+    "name": "Redmi 10 64GB",
+    "price": 138800,
+    "quantity": 38
+  },
+  {
+    "name": "Pixel 10 128GB",
+    "price": 148500,
+    "quantity": 45
+  },
+  {
+    "name": "Edge 10 256GB",
+    "price": 158300,
+    "quantity": 52
+  },
+  {
+    "name": "Moto G 10 512GB",
+    "price": 168000,
+    "quantity": 59
+  },
+  {
+    "name": "Realme 10 64GB",
+    "price": 177700,
+    "quantity": 66
+  },
+  {
+    "name": "POCO 10 128GB",
+    "price": 187500,
+    "quantity": 73
+  },
+  {
+    "name": "Nord 10 256GB",
+    "price": 197200,
+    "quantity": 80
+  },
+  {
+    "name": "Zenfone 10 512GB",
+    "price": 207000,
+    "quantity": 87
+  },
+  {
+    "name": "ROG Phone 10 64GB",
+    "price": 216700,
+    "quantity": 94
+  },
+  {
+    "name": "Honor 10 128GB",
+    "price": 226400,
+    "quantity": 101
+  },
+  {
+    "name": "Oppo Reno 10 256GB",
+    "price": 236200,
+    "quantity": 108
+  },
+  {
+    "name": "iPhone 11 512GB",
+    "price": 245900,
+    "quantity": 115
+  },
+  {
+    "name": "Galaxy S 11 64GB",
+    "price": 255600,
+    "quantity": 122
+  },
+  {
+    "name": "Galaxy A 11 128GB",
+    "price": 265400,
+    "quantity": 129
+  },
+  {
+    "name": "Redmi Note 11 256GB",
+    "price": 275100,
+    "quantity": 136
+  },
+  {
+    "name": "Redmi 11 512GB",
+    "price": 284900,
+    "quantity": 143
+  },
+  {
+    "name": "Pixel 11 64GB",
+    "price": 294600,
+    "quantity": 150
+  },
+  {
+    "name": "Edge 11 128GB",
+    "price": 304300,
+    "quantity": 157
+  },
+  {
+    "name": "Moto G 11 256GB",
+    "price": 314100,
+    "quantity": 164
+  },
+  {
+    "name": "Realme 11 512GB",
+    "price": 323800,
+    "quantity": 171
+  },
+  {
+    "name": "POCO 11 64GB",
+    "price": 333500,
+    "quantity": 178
+  },
+  {
+    "name": "Nord 11 128GB",
+    "price": 343300,
+    "quantity": 185
+  },
+  {
+    "name": "Zenfone 11 256GB",
+    "price": 353000,
+    "quantity": 192
+  },
+  {
+    "name": "ROG Phone 11 512GB",
+    "price": 362700,
+    "quantity": 199
+  },
+  {
+    "name": "Honor 11 64GB",
+    "price": 372500,
+    "quantity": 206
+  },
+  {
+    "name": "Oppo Reno 11 128GB",
+    "price": 382200,
+    "quantity": 213
+  },
+  {
+    "name": "iPhone 12 256GB",
+    "price": 392000,
+    "quantity": 220
+  },
+  {
+    "name": "Galaxy S 12 512GB",
+    "price": 401700,
+    "quantity": 227
+  },
+  {
+    "name": "Galaxy A 12 64GB",
+    "price": 411400,
+    "quantity": 234
+  },
+  {
+    "name": "Redmi Note 12 128GB",
+    "price": 421200,
+    "quantity": 241
+  },
+  {
+    "name": "Redmi 12 256GB",
+    "price": 430900,
+    "quantity": 248
+  },
+  {
+    "name": "Pixel 12 512GB",
+    "price": 440600,
+    "quantity": 255
+  },
+  {
+    "name": "Edge 12 64GB",
+    "price": 450400,
+    "quantity": 262
+  },
+  {
+    "name": "Moto G 12 128GB",
+    "price": 460100,
+    "quantity": 269
+  },
+  {
+    "name": "Realme 12 256GB",
+    "price": 469900,
+    "quantity": 276
+  },
+  {
+    "name": "POCO 12 512GB",
+    "price": 479600,
+    "quantity": 283
+  },
+  {
+    "name": "Nord 12 64GB",
+    "price": 489300,
+    "quantity": 290
+  },
+  {
+    "name": "Zenfone 12 128GB",
+    "price": 499100,
+    "quantity": 297
+  },
+  {
+    "name": "ROG Phone 12 256GB",
+    "price": 508800,
+    "quantity": 14
+  },
+  {
+    "name": "Honor 12 512GB",
+    "price": 518500,
+    "quantity": 21
+  },
+  {
+    "name": "Oppo Reno 12 64GB",
+    "price": 528300,
+    "quantity": 28
+  },
+  {
+    "name": "iPhone 13 128GB",
+    "price": 538000,
+    "quantity": 35
+  },
+  {
+    "name": "Galaxy S 13 256GB",
+    "price": 547800,
+    "quantity": 42
+  },
+  {
+    "name": "Galaxy A 13 512GB",
+    "price": 557500,
+    "quantity": 49
+  },
+  {
+    "name": "Redmi Note 13 64GB",
+    "price": 567200,
+    "quantity": 56
+  },
+  {
+    "name": "Redmi 13 128GB",
+    "price": 577000,
+    "quantity": 63
+  },
+  {
+    "name": "Pixel 13 256GB",
+    "price": 586700,
+    "quantity": 70
+  },
+  {
+    "name": "Edge 13 512GB",
+    "price": 596400,
+    "quantity": 77
+  },
+  {
+    "name": "Moto G 13 64GB",
+    "price": 606200,
+    "quantity": 84
+  },
+  {
+    "name": "Realme 13 128GB",
+    "price": 615900,
+    "quantity": 91
+  },
+  {
+    "name": "POCO 13 256GB",
+    "price": 625600,
+    "quantity": 98
+  },
+  {
+    "name": "Nord 13 512GB",
+    "price": 635400,
+    "quantity": 105
+  },
+  {
+    "name": "Zenfone 13 64GB",
+    "price": 645100,
+    "quantity": 112
+  },
+  {
+    "name": "ROG Phone 13 128GB",
+    "price": 654900,
+    "quantity": 119
+  },
+  {
+    "name": "Honor 13 256GB",
+    "price": 664600,
+    "quantity": 126
+  },
+  {
+    "name": "Oppo Reno 13 512GB",
+    "price": 674300,
+    "quantity": 133
+  },
+  {
+    "name": "iPhone 14 64GB",
+    "price": 684100,
+    "quantity": 140
+  },
+  {
+    "name": "Galaxy S 14 128GB",
+    "price": 693800,
+    "quantity": 147
+  },
+  {
+    "name": "Galaxy A 14 256GB",
+    "price": 703500,
+    "quantity": 154
+  },
+  {
+    "name": "Redmi Note 14 512GB",
+    "price": 713300,
+    "quantity": 161
+  },
+  {
+    "name": "Redmi 14 64GB",
+    "price": 723000,
+    "quantity": 168
+  },
+  {
+    "name": "Pixel 14 128GB",
+    "price": 732800,
+    "quantity": 175
+  },
+  {
+    "name": "Edge 14 256GB",
+    "price": 742500,
+    "quantity": 182
+  },
+  {
+    "name": "Moto G 14 512GB",
+    "price": 752200,
+    "quantity": 189
+  },
+  {
+    "name": "Realme 14 64GB",
+    "price": 762000,
+    "quantity": 196
+  },
+  {
+    "name": "POCO 14 128GB",
+    "price": 771700,
+    "quantity": 203
+  },
+  {
+    "name": "Nord 14 256GB",
+    "price": 781400,
+    "quantity": 210
+  },
+  {
+    "name": "Zenfone 14 512GB",
+    "price": 791200,
+    "quantity": 217
+  },
+  {
+    "name": "ROG Phone 14 64GB",
+    "price": 800900,
+    "quantity": 224
+  },
+  {
+    "name": "Honor 14 128GB",
+    "price": 810700,
+    "quantity": 231
+  },
+  {
+    "name": "Oppo Reno 14 256GB",
+    "price": 820400,
+    "quantity": 238
+  },
+  {
+    "name": "iPhone 15 512GB",
+    "price": 830100,
+    "quantity": 245
+  },
+  {
+    "name": "Galaxy S 15 64GB",
+    "price": 839900,
+    "quantity": 252
+  },
+  {
+    "name": "Galaxy A 15 128GB",
+    "price": 849600,
+    "quantity": 259
+  },
+  {
+    "name": "Redmi Note 15 256GB",
+    "price": 859300,
+    "quantity": 266
+  },
+  {
+    "name": "Redmi 15 512GB",
+    "price": 869100,
+    "quantity": 273
+  },
+  {
+    "name": "Pixel 15 64GB",
+    "price": 878800,
+    "quantity": 280
+  },
+  {
+    "name": "Edge 15 128GB",
+    "price": 888500,
+    "quantity": 287
+  },
+  {
+    "name": "Moto G 15 256GB",
+    "price": 898300,
+    "quantity": 294
+  },
+  {
+    "name": "Realme 15 512GB",
+    "price": 908000,
+    "quantity": 11
+  },
+  {
+    "name": "POCO 15 64GB",
+    "price": 917800,
+    "quantity": 18
+  },
+  {
+    "name": "Nord 15 128GB",
+    "price": 927500,
+    "quantity": 25
+  },
+  {
+    "name": "Zenfone 15 256GB",
+    "price": 937200,
+    "quantity": 32
+  },
+  {
+    "name": "ROG Phone 15 512GB",
+    "price": 947000,
+    "quantity": 39
+  },
+  {
+    "name": "Honor 15 64GB",
+    "price": 956700,
+    "quantity": 46
+  },
+  {
+    "name": "Oppo Reno 15 128GB",
+    "price": 966400,
+    "quantity": 53
+  },
+  {
+    "name": "iPhone 16 256GB",
+    "price": 976200,
+    "quantity": 60
+  },
+  {
+    "name": "Galaxy S 16 512GB",
+    "price": 985900,
+    "quantity": 67
+  },
+  {
+    "name": "Galaxy A 16 64GB",
+    "price": 995700,
+    "quantity": 74
+  },
+  {
+    "name": "Redmi Note 16 128GB",
+    "price": 1005400,
+    "quantity": 81
+  },
+  {
+    "name": "Redmi 16 256GB",
+    "price": 1015100,
+    "quantity": 88
+  },
+  {
+    "name": "Pixel 16 512GB",
+    "price": 1024900,
+    "quantity": 95
+  },
+  {
+    "name": "Edge 16 64GB",
+    "price": 1034600,
+    "quantity": 102
+  },
+  {
+    "name": "Moto G 16 128GB",
+    "price": 1044300,
+    "quantity": 109
+  },
+  {
+    "name": "Realme 16 256GB",
+    "price": 1054100,
+    "quantity": 116
+  },
+  {
+    "name": "POCO 16 512GB",
+    "price": 1063800,
+    "quantity": 123
+  }
+]
