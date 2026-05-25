@@ -94,7 +94,6 @@ O que foi simplificado em relação à arquitetura alvo:
 - **Sem Outbox Pattern:** a mensagem é publicada no RabbitMQ logo após o commit da transação (publish-após-commit). Existe um risco residual de o pedido ser gravado mas a mensagem não ser publicada (falha entre commit e publish). Mitiga-se com o worker idempotente e reconciliação futura — o Outbox fica como evolução planejada.
 - **Cache simples (TypeORM):** SWR, lock distribuído e jitter de TTL não estão implementados. O cache de produtos é direto, sem revalidação em background nem proteção contra cache stampede.
 - **Sem DLQ / retry avançado:** mensagens que falham no worker não são movidas para uma Dead Letter Queue com estratégia de backoff. Se o decremento de estoque falhar no worker, a mensagem é confirmada (ack) e o pedido fica `PENDING`/`PROCESSING` até reconciliação futura.
-- **Idempotência best-effort:** a `idempotency-key` garante que um reenvio **sequencial** (retry/duplo clique) não cria pedido duplicado (checagem no Redis). Submits **simultâneos** com a mesma key não têm lock — fechar essa janela depende do lock distribuído previsto na arquitetura alvo.
 - **TTL da idempotência não é renovado durante o processamento:** a chave no Redis tem TTL fixo e não há _refresh_/heartbeat enquanto o worker processa a mensagem. Se o processamento exceder o TTL, a chave pode expirar e permitir reprocessamento. A renovação do TTL durante o processamento faz parte da arquitetura alvo.
 - **Observabilidade parcial:** apenas traces tanto na pate da vitrine quando no fluxo completo do checkout e logs estruturados com `correlationId`, `orderId`, `productId` e status. Sem métricas exportadas (Prometheus/OTel).
 - **Sem autenticação:** os endpoints não exigem token; o `x-request-id` é usado apenas como correlação.
@@ -185,7 +184,7 @@ A validação e o decremento ocorrem na mesma instrução SQL, eliminando a jane
 | Lock pessimista (`SELECT FOR UPDATE`) | Consistência forte, suporta regras complexas | Contenção, pior escalabilidade, maior latência |
 | Reserva de estoque | Reduz overselling no assíncrono, feedback imediato | Complexidade, exige expiração e reconciliação |
 
-**Idempotência:** o header `idempotency-key` (UUID v4) é propagado até a fila e armazenado no Redis e no banco. O worker verifica se o pedido já foi concluído antes de processar — evitando efeitos de duplo clique, retry duplicado ou reprocessamento.
+**Idempotência:** o header `idempotency-key` (UUID v4) é adquirido no início do checkout via `SET NX` no Redis (lock leve com TTL) — a chave guarda o `orderId` gerado pela aplicação. Se a chave já existe, o checkout não reserva nem cria novo pedido: retorna o `orderId` existente (202). Isso cobre tanto o reenvio **sequencial** (retry/duplo clique) quanto submits **simultâneos** com a mesma key (o `SET NX` é atômico — só um vence; os demais caem no caminho de duplicata). A mesma `idempotency-key` é propagada na mensagem da fila, e o worker também deduplica via Redis antes de decrementar o estoque, tolerando mensagem duplicada/retry.
 
 ---
 
