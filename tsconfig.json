@@ -12,7 +12,8 @@
       "esnext"
     ],
     "types": [
-      "node"
+      "node",
+      "vitest/globals"
     ],
     "sourceMap": true,
     "declaration": true,
@@ -22,6 +23,8 @@
     "strict": true,
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true,

@@ -3,12 +3,15 @@ import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod
 
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 
+import type { CheckoutPublisher } from '@/messaging/checkout-queue.js'
+
 import { loggerOptions } from '@/config/logger/index.js'
+import { registerRequestContext } from '@/config/request-context.js'
 import { registerSwagger } from '@/config/swagger/index.js'
 import { registerRoutes } from '@/http/routes.js'
 
 
-export function server() {
+export function server(publisher: CheckoutPublisher) {
     const app = fastify({
         logger: loggerOptions.pinoOptions,
         genReqId: loggerOptions.fastifyOptions.genReqId,
@@ -17,8 +20,9 @@ export function server() {
     app.setValidatorCompiler(validatorCompiler)
     app.setSerializerCompiler(serializerCompiler)
 
+    registerRequestContext(app)
     registerSwagger(app)
-    app.register(registerRoutes)
+    app.register(async instance => { await registerRoutes(instance, publisher) })
 
     app.addHook('onSend', (_request, reply, payload, done) => {
         reply.body = payload

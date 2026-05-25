@@ -38,6 +38,40 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cellshop-worker
+    command: npm run worker
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL: postgres://cellshop:cellshop@postgres:5432/cellshop
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://cellshop:cellshop@rabbitmq:5672
+
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: cellshop
+      DATABASE_PASSWORD: cellshop
+      DATABASE_NAME: cellshop
+      DATABASE_SSL: "false"
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB_NUMBER: 0
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
   postgres:
     image: postgres:17-alpine
     container_name: cellshop-postgres

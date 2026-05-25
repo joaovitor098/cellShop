@@ -16,7 +16,7 @@ export function registerSwagger(app: FastifyInstance): void {
       openapi: '3.1.0',
       info: {
         title: 'cellShop API',
-        description: 'Catálogo de produtos e checkout de pedidos',
+        description: 'Product catalog and order checkout',
         version: '0.1.0',
       },
       tags: Object.values(swaggerTags).map(name => ({ name, description: name })),

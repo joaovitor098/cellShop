@@ -1,20 +1,23 @@
+import 'reflect-metadata'
+
 import path from 'node:path'
 import { DataSource } from 'typeorm'
 
 import type { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions.js'
 
 import { env } from '@/config/env/index.js'
+import { Order } from '@/database/entities/order.entity.js'
+import { Product } from '@/database/entities/product.entity.js'
+import { Stock } from '@/database/entities/stock.entity.js'
 
-import { JitteredRedisQueryResultCache } from './jittered-redis-cache.js'
-
-const TTL_REDIS_MS = 30_000 // 30 s
+import { LoggingRedisQueryResultCache } from './logging-redis-cache.js'
 
 const cacheOptions: NonNullable<PostgresConnectionOptions['cache']> = {
   type: 'ioredis',
   alwaysEnabled: false,
-  ignoreErrors: false,
-  duration: TTL_REDIS_MS,
-  provider: connection => new JitteredRedisQueryResultCache(connection, 'ioredis'),
+  ignoreErrors: true,
+  duration: env.CACHE_TTL_MS,
+  provider: connection => new LoggingRedisQueryResultCache(connection, 'ioredis'),
   options: {
     host: env.REDIS_HOST,
     port: env.REDIS_PORT,
@@ -33,7 +36,7 @@ export function getDataSourceOptions(): PostgresConnectionOptions {
     database: env.DATABASE_NAME,
     synchronize: false,
     dropSchema: false,
-    entities: [],
+    entities: [Product, Order, Stock],
     logging: false,
     logger: 'advanced-console',
     migrationsRun: true,

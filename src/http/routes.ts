@@ -1,7 +1,15 @@
 import type { FastifyInstance } from 'fastify'
 
-import { healthCheckController } from './controllers/health-check/health-check.controller.js'
+import type { CheckoutPublisher } from '@/messaging/checkout-queue.js'
 
-export async function registerRoutes(app: FastifyInstance): Promise<void> {
+import { healthCheckController } from './controllers/health-check/health-check.controller.js'
+import { listProductsController } from './controllers/products/list-products.controller.js'
+import { getOrderStatusController } from './controllers/orders/get-order-status.controller.js'
+import { registerCheckoutController } from './controllers/orders/checkout/checkout.controller.js'
+
+export async function registerRoutes(app: FastifyInstance, publisher: CheckoutPublisher): Promise<void> {
   healthCheckController(app)
+  listProductsController(app)
+  getOrderStatusController(app)
+  registerCheckoutController(app, publisher)
 }
