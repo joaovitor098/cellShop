@@ -14,9 +14,7 @@ const cacheOptions: NonNullable<PostgresConnectionOptions['cache']> = {
   type: 'ioredis',
   alwaysEnabled: false,
   ignoreErrors: true,
-  // TTL padrão; queries passam o mesmo valor explicitamente em .cache().
   duration: env.CACHE_TTL_MS,
-  // Provider que loga cache hit/miss (com reqId via AsyncLocalStorage).
   provider: connection => new LoggingRedisQueryResultCache(connection, 'ioredis'),
   options: {
     host: env.REDIS_HOST,

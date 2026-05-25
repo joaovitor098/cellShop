@@ -3,7 +3,7 @@ import { ListProductsService } from './list-products.service.js'
 import type { ProductsRepository } from '@/database/repositories/products-repository.js'
 
 describe('ListProductsService', () => {
-  it('monta data + pagination com totalPages calculado', async () => {
+  it('builds data + pagination with computed totalPages', async () => {
     const repository: ProductsRepository = {
       findPaginated: async () => ({ items: [{ id: 'a', name: 'X', price: 100 }], total: 100 }),
     }
@@ -14,7 +14,7 @@ describe('ListProductsService', () => {
     expect(result.data).toEqual([{ id: 'a', name: 'X', price: 100 }])
   })
 
-  it('totalPages = 0 quando não há produtos', async () => {
+  it('totalPages = 0 when there are no products', async () => {
     const repository: ProductsRepository = {
       findPaginated: async () => ({ items: [], total: 0 }),
     }

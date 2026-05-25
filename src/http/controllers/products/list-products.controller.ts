@@ -13,7 +13,6 @@ import type { ProductsRepository } from '@/database/repositories/products-reposi
 
 export function listProductsController(
   app: FastifyInstance,
-  // DI: default usa o repo real; testes injetam um fake.
   repository: ProductsRepository = new TypeOrmProductsRepository(dataSource),
 ): void {
   const service = new ListProductsService(repository)
@@ -23,7 +22,7 @@ export function listProductsController(
     {
       schema: {
         tags: [swaggerTags.PRODUCTS],
-        summary: 'Lista produtos paginados',
+        summary: 'List paginated products',
         querystring: listProductsQuerySchema,
         response: {
           200: paginatedProductsSchema,

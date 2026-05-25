@@ -6,10 +6,6 @@ import { getCurrentRequest } from '@/config/request-context.js'
 import type { QueryResultCacheOptions } from 'typeorm/cache/QueryResultCacheOptions.js'
 import type { QueryRunner } from 'typeorm'
 
-/**
- * Cache de query no Redis que loga cache hit/miss. O provider é global, mas
- * recupera a request atual via AsyncLocalStorage pra logar com o reqId junto.
- */
 export class LoggingRedisQueryResultCache extends RedisQueryResultCache {
   override async getFromCache(
     options: QueryResultCacheOptions,
