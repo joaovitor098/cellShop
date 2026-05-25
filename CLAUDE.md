@@ -1,25 +1,37 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Este arquivo orienta o Claude Code (claude.ai/code) ao trabalhar neste repositório.
 
-## Project
+## Projeto
 
-cellShop — technical-challenge backend that lists a product catalog and handles order checkout. Greenfield: the toolchain is configured but application code does not exist yet. `package.json`'s `dev` script points to `src/start-server.ts`, which is the expected entry point to create.
+cellShop — backend de desafio técnico que lista um catálogo de produtos e processa o checkout de pedidos. Greenfield: o toolchain está configurado, mas o código da aplicação ainda não existe. O script `dev` do `package.json` aponta para `src/start-server.ts`, que é o entrypoint esperado a ser criado.
 
-## Stack & Conventions
+## Stack & Convenções
 
-- **Runtime:** Node `24.16.0` (pinned in `.nvmrc`). `engine-strict=true` in `.npmrc` enforces it — run `nvm use` before installing.
-- **Web framework:** Fastify. `tsconfig.json` extends `fastify-tsconfig`; this package is not yet in `devDependencies`, so `npm i -D fastify fastify-tsconfig` (plus `fastify`) is required before the config resolves.
-- **TypeScript:** ESM only (`module: nodenext`, `verbatimModuleSyntax`, `isolatedModules`). Use explicit `import type` for type-only imports and include file extensions in relative imports.
-- **Path alias:** `@/*` → `./src/*`. `tsx` resolves it at runtime; any test runner / build step must be configured to honor it too.
-- **Strictness:** `strict`, `noUncheckedIndexedAccess`, and `exactOptionalPropertyTypes` are all on. Indexed access yields `T | undefined` (guard before use); optional properties cannot be set to `undefined` explicitly.
-- **Dependency pinning:** `save-exact=true` — installs write exact versions, no `^`. Keep it that way.
+- **Runtime:** Node `24.16.0` (fixado no `.nvmrc`). `engine-strict=true` no `.npmrc` força a versão — rode `nvm use` antes de instalar.
+- **Framework web:** Fastify. O `tsconfig.json` estende `fastify-tsconfig`; este pacote ainda não está em `devDependencies`, então `npm i -D fastify fastify-tsconfig` (mais `fastify`) é necessário antes da config resolver.
+- **TypeScript:** Somente ESM (`module: nodenext`, `verbatimModuleSyntax`, `isolatedModules`). Use `import type` explícito para imports de tipo e inclua a extensão do arquivo nos imports relativos.
+- **Path alias:** `@/*` → `./src/*`. O `tsx` resolve em runtime; qualquer test runner / build step também deve ser configurado para honrar o alias.
+- **Strictness:** `strict`, `noUncheckedIndexedAccess` e `exactOptionalPropertyTypes` estão todos ligados. Acesso indexado retorna `T | undefined` (faça guard antes de usar); propriedades opcionais não podem receber `undefined` explicitamente.
+- **Pinning de dependências:** `save-exact=true` — installs gravam versões exatas, sem `^`. Mantenha assim.
 
-## Commands
+## Arquitetura & Estrutura
+
+Arquitetura em camadas. Controllers fazem a composição; tudo abaixo depende de abstrações, nunca de implementações concretas.
+
+- **Types & interfaces:** Declare em arquivos `*.d.ts` dedicados, nunca inline junto do código de runtime. Se o tipo for compartilhado entre módulos, fica em `src/types/`. Tipos locais ao módulo ficam em um `*.d.ts` ao lado do módulo.
+- **Endpoints:** Um controller por endpoint em `src/http/controllers/`. Cada controller tem seu próprio service.
+- **Injeção de dependência:** Somente o controller pode instanciar classes. O controller monta as dependências e as injeta no seu service. O service depende de abstrações (interfaces), não de implementações concretas — ou seja, repositórios são passados, não construídos dentro do service.
+- **Repositórios:** `src/database/repositories/` — acesso a dados; consumidos pelos services através de suas abstrações.
+- **Entidades:** `src/database/entities/`.
+- **DTOs:** `src/dtos/`.
+- **Validação:** Zod valida toda entrada dos endpoints (params, query, body) e valida também os payloads de resposta.
+
+## Comandos
 
 ```bash
-npm install        # respects engine-strict (Node 24.16.0) and save-exact
-npm run dev        # tsx watch on src/start-server.ts (hot reload)
+npm install        # respeita engine-strict (Node 24.16.0) e save-exact
+npm run dev        # tsx watch em src/start-server.ts (hot reload)
 ```
 
-No build, lint, or test scripts exist yet — add them to `package.json` `scripts` as they are introduced.
+Ainda não existem scripts de build, lint ou test — adicione-os em `scripts` do `package.json` conforme forem introduzidos.
