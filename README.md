@@ -68,7 +68,7 @@ npm test -- --run
 | Header | Tipo | Descrição |
 |---|---|---|
 | `idempotency-key` | UUID v4 | Chave de idempotência — reenvios com a mesma chave não criam pedido duplicado |
-| `x-request-id` | string | Usado como `correlationId` e identificador de usuário nos logs |
+| `x-request-id` | string | Usado como `correlationId` e identificador de usuário nos logs, gerado pelo backend |
 
 **Body:**
 
@@ -93,8 +93,9 @@ O que foi simplificado em relação à arquitetura alvo:
 
 - **Sem Outbox Pattern:** a mensagem é publicada no RabbitMQ logo após o commit da transação (publish-após-commit). Existe um risco residual de o pedido ser gravado mas a mensagem não ser publicada (falha entre commit e publish). Mitiga-se com o worker idempotente e reconciliação futura — o Outbox fica como evolução planejada.
 - **Cache simples (TypeORM):** SWR, lock distribuído e jitter de TTL não estão implementados. O cache de produtos é direto, sem revalidação em background nem proteção contra cache stampede.
-- **Sem DLQ / retry avançado:** mensagens que falham no worker não são movidas para uma Dead Letter Queue com estratégia de backoff.
-- **Observabilidade parcial:** apenas logs estruturados com `correlationId`, `orderId`, `productId` e status. Sem métricas exportadas (Prometheus/OTel) nem traces distribuídos.
+- **Sem DLQ / retry avançado:** mensagens que falham no worker não são movidas para uma Dead Letter Queue com estratégia de backoff. Se o decremento de estoque falhar no worker, a mensagem é confirmada (ack) e o pedido fica `PENDING`/`PROCESSING` até reconciliação futura.
+- **Idempotência best-effort:** a `idempotency-key` garante que um reenvio **sequencial** (retry/duplo clique) não cria pedido duplicado (checagem no Redis). Submits **simultâneos** com a mesma key não têm lock — fechar essa janela depende do lock distribuído previsto na arquitetura alvo.
+- **Observabilidade parcial:** apenas traces tanto na pate da vitrine quando no fluxo completo do checkout e logs estruturados com `correlationId`, `orderId`, `productId` e status. Sem métricas exportadas (Prometheus/OTel).
 - **Sem autenticação:** os endpoints não exigem token; o `x-request-id` é usado apenas como correlação.
 
 ---
@@ -213,6 +214,6 @@ Resumo das evoluções planejadas sobre a implementação atual:
 | Cache | Cache direto (TypeORM) | Cache-aside + SWR + lock distribuído + jitter |
 | Consistência na publicação | Publish-após-commit | Outbox Pattern (transacional) |
 | Retry / resiliência | Sem DLQ/retry avançado | DLQ + backoff exponencial + alertas |
-| Observabilidade | Logs estruturados | Métricas (Prometheus/OTel) + traces distribuídos + SLOs/alertas |
+| Observabilidade | Logs estruturados + traces distribuídos | Métricas (Prometheus/OTel) + traces distribuídos + SLOs/alertas |
 | Autenticação | Sem auth | JWT ou equivalente |
-| Estoque | Atomic update condicional | Reserva de estoque + reconciliação periódica com ERP |
+| Estoque | Atomic update condicional + Reserva de estoque + | Reserva de estoque + reconciliação periódica com ERP |
