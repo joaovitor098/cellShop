@@ -6,6 +6,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/start-server.ts",
+    "worker": "tsx watch src/start-worker.ts",
     "database": "tsx ./node_modules/typeorm/cli.js",
     "test": "vitest"
   },
