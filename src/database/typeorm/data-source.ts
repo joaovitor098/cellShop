@@ -6,13 +6,14 @@ import { DataSource } from 'typeorm'
 import type { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions.js'
 
 import { env } from '@/config/env/index.js'
+import { Product } from '@/database/entities/product.entity.js'
 
 const TTL_REDIS_MS = 30_000 // 30 s
 
 const cacheOptions: NonNullable<PostgresConnectionOptions['cache']> = {
   type: 'ioredis',
   alwaysEnabled: false,
-  ignoreErrors: false,
+  ignoreErrors: true,
   duration: TTL_REDIS_MS,
   options: {
     host: env.REDIS_HOST,
@@ -32,7 +33,7 @@ export function getDataSourceOptions(): PostgresConnectionOptions {
     database: env.DATABASE_NAME,
     synchronize: false,
     dropSchema: false,
-    entities: [],
+    entities: [Product],
     logging: false,
     logger: 'advanced-console',
     migrationsRun: true,
