@@ -6,6 +6,8 @@ describe('GetOrderStatusService', () => {
   it('returns id + status when the order exists', async () => {
     const repository: OrdersRepository = {
       findById: async () => ({ id: 'o1', status: 'PROCESSED', user: 'john' }),
+      create: async () => ({ id: 'o1', status: 'PENDING', user: 'john' }),
+      updateStatus: async () => {},
     }
 
     const result = await new GetOrderStatusService(repository).getStatus('o1')
@@ -16,6 +18,8 @@ describe('GetOrderStatusService', () => {
   it('returns null when the order does not exist', async () => {
     const repository: OrdersRepository = {
       findById: async () => null,
+      create: async () => ({ id: 'o1', status: 'PENDING', user: 'missing' }),
+      updateStatus: async () => {},
     }
 
     const result = await new GetOrderStatusService(repository).getStatus('missing')
