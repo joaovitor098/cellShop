@@ -53,10 +53,14 @@ Tabela `stocks` (id, product_id, quantity, reserved).
 
 Chave `idempotency:{idempotency-key}` → JSON `{ status, orderId }`. TTL configurável (`IDEMPOTENCY_TTL_MS`, default 24h).
 
-Estados: `PENDING` (criado no checkout) → `PROCESSING` (worker iniciou) → `PROCESSED` (worker concluiu).
+Estados: `PENDING` (lock adquirido no início do checkout) → `PROCESSING` (worker iniciou) → `PROCESSED` (worker concluiu).
 
-- **Checkout:** se a chave já existe → retorna o `orderId` dela (idempotente). Senão, após o commit, cria `{ status: PENDING, orderId }`.
-- **Worker:** lê a chave; `PROCESSED` → ack e segue; senão → seta `PROCESSING`, processa, ao final seta `PROCESSED`.
+- **Checkout — lock SET NX no início:**
+  1. Gera `orderId = randomUUID()` na aplicação.
+  2. Chama `idempotency.create(key, { status: 'PENDING', orderId })`, que executa `SET idempotency:{key} <json> PX <ttl> NX` e retorna `boolean` (`true` se adquiriu o lock, `false` se a chave já existia).
+  3. Se `create` retornar **`false`** (chave já existe — replay sequencial ou race condition simultânea): lê o registro existente com `get` e retorna o `orderId` já salvo (202 idempotente), sem reservar nem criar nada. A atomicidade do NX garante que apenas um winner prossegue mesmo em concorrência.
+  4. Se `create` retornar **`true`** (lock adquirido): executa a transação — reserva o estoque (`reserve` atômico condicional); se não reservado → `idempotency.delete(key)` (libera o lock) → retorna conflito (409); se reservado → cria o pedido com o `orderId` explícito, lê a disponibilidade → commit. Após a tx: publica a mensagem → retorna 202.
+- **Worker:** lê a chave; `PROCESSED` → ack e segue; senão → seta `PROCESSING`, decrementa estoque, seta order `PROCESSED`, seta idempotency `PROCESSED`.
 
 ## Fila
 
@@ -93,8 +97,8 @@ Checkout: `controller → CheckoutService → { StocksRepository, OrdersReposito
 | `redisClient` | `src/config/redis/index.ts` | ioredis singleton do app (do env) |
 | `Stock` (entity) | `src/database/entities/stock.entity.ts` | mapeia `stocks` (id, productId, quantity, reserved) |
 | `StocksRepository` (abstração + impl) | `src/database/repositories/` | `reserve(p,q,manager)`, `commitReservation(p,q,manager)`, `findAvailability(p,manager)` |
-| `OrdersRepository` (estende) | `src/database/repositories/` | + `create(user,manager)`, `updateStatus(id,status,manager)` |
-| `IdempotencyStore` | `src/database/idempotency/` | get/create/setStatus no Redis |
+| `OrdersRepository` (estende) | `src/database/repositories/` | + `create(orderId, user, manager?)`, `updateStatus(id,status,manager?)` |
+| `IdempotencyStore` | `src/database/idempotency/` | `get`, `create(key,record)→Promise<boolean>` (SET NX), `setStatus`, `delete(key)` |
 | `QueuePublisher` / `QueueConsumer` | `src/messaging/` | amqplib publish/consume |
 | `CheckoutService` | `src/http/controllers/orders/checkout/` | orquestra reserva+pedido+idempotência, publica após commit |
 | `checkoutController` | `src/http/controllers/orders/checkout/` | rota, DI, validação, logs, 202/409 |

@@ -324,7 +324,7 @@ import type { EntityManager } from 'typeorm'
 import type { Order, OrderStatus } from '@/database/entities/order.entity.js'
 
 // ...dentro de OrdersRepository:
-  create(user: string, manager?: EntityManager): Promise<Order>
+  create(orderId: string, user: string, manager?: EntityManager): Promise<Order>
   updateStatus(id: string, status: OrderStatus, manager?: EntityManager): Promise<void>
 ```
 
@@ -335,16 +335,16 @@ import { TypeOrmOrdersRepository } from './typeorm-orders-repository.js'
 import type { DataSource, EntityManager } from 'typeorm'
 
 describe('TypeOrmOrdersRepository.create', () => {
-  it('saves a PENDING order with the given user', async () => {
+  it('saves a PENDING order with the given orderId and user', async () => {
     const saved = { id: 'o1', status: 'PENDING', user: 'r1' }
     const repo = {
       create: (data: unknown) => data,
-      save: async (o: unknown) => ({ ...(o as object), id: 'o1' }),
+      save: async (o: unknown) => ({ ...(o as object) }),
     }
     const manager = { getRepository: () => repo } as unknown as EntityManager
     const dataSource = { manager } as unknown as DataSource
 
-    const result = await new TypeOrmOrdersRepository(dataSource).create('r1', manager)
+    const result = await new TypeOrmOrdersRepository(dataSource).create('o1', 'r1', manager)
 
     expect(result).toEqual(saved)
   })
@@ -353,10 +353,10 @@ describe('TypeOrmOrdersRepository.create', () => {
 
 - [ ] **Step 3: Implementar** — em `typeorm-orders-repository.ts`, adicionar:
 ```ts
-  async create(user: string, manager: EntityManager = this.dataSource.manager): Promise<Order> {
+  async create(orderId: string, user: string, manager: EntityManager = this.dataSource.manager): Promise<Order> {
     const repository = manager.getRepository(Order)
 
-    return repository.save(repository.create({ user, status: 'PENDING' }))
+    return repository.save(repository.create({ id: orderId, user, status: 'PENDING' }))
   }
 
   async updateStatus(id: string, status: OrderStatus, manager: EntityManager = this.dataSource.manager): Promise<void> {
@@ -386,8 +386,9 @@ export interface IdempotencyRecord {
 
 export interface IdempotencyStore {
   get(key: string): Promise<IdempotencyRecord | null>
-  create(key: string, record: IdempotencyRecord): Promise<void>
+  create(key: string, record: IdempotencyRecord): Promise<boolean>
   setStatus(key: string, status: IdempotencyStatus): Promise<void>
+  delete(key: string): Promise<void>
 }
 ```
 
@@ -413,8 +414,10 @@ export class RedisIdempotencyStore implements IdempotencyStore {
     return raw ? (JSON.parse(raw) as IdempotencyRecord) : null
   }
 
-  async create(key: string, record: IdempotencyRecord): Promise<void> {
-    await this.redis.set(this.key(key), JSON.stringify(record), 'PX', this.ttlMs)
+  async create(key: string, record: IdempotencyRecord): Promise<boolean> {
+    const result = await this.redis.set(this.key(key), JSON.stringify(record), 'PX', this.ttlMs, 'NX')
+
+    return result === 'OK'
   }
 
   async setStatus(key: string, status: IdempotencyStatus): Promise<void> {
@@ -423,6 +426,10 @@ export class RedisIdempotencyStore implements IdempotencyStore {
     if (!existing) return
 
     await this.redis.set(this.key(key), JSON.stringify({ ...existing, status }), 'PX', this.ttlMs)
+  }
+
+  async delete(key: string): Promise<void> {
+    await this.redis.del(this.key(key))
   }
 }
 ```
@@ -441,19 +448,22 @@ describe('RedisIdempotencyStore (integration)', () => {
     await redis.quit()
   })
 
-  it('creates, reads and updates status', async () => {
+  it('creates with NX (returns true first time, false on repeat), reads and updates status', async () => {
     const store = new RedisIdempotencyStore(redis, 60_000)
     const key = randomUUID()
 
     expect(await store.get(key)).toBeNull()
 
-    await store.create(key, { status: 'PENDING', orderId: 'o1' })
+    expect(await store.create(key, { status: 'PENDING', orderId: 'o1' })).toBe(true)
     expect(await store.get(key)).toEqual({ status: 'PENDING', orderId: 'o1' })
+
+    expect(await store.create(key, { status: 'PENDING', orderId: 'o2' })).toBe(false)
 
     await store.setStatus(key, 'PROCESSED')
     expect(await store.get(key)).toEqual({ status: 'PROCESSED', orderId: 'o1' })
 
-    await redis.del(`idempotency:${key}`)
+    await store.delete(key)
+    expect(await store.get(key)).toBeNull()
   })
 })
 ```
@@ -587,11 +597,13 @@ import type { OrdersRepository } from '@/database/repositories/orders-repository
 import type { IdempotencyStore } from '@/database/idempotency/idempotency-store.js'
 import type { CheckoutPublisher } from '@/messaging/checkout-queue.js'
 import type { Logger } from '@/config/logger/logger.js'
+import type { RunInTransaction } from './checkout.service.js'
 
 const logger = { info: () => undefined, warn: () => undefined, error: () => undefined, debug: () => undefined, child: () => logger } as unknown as Logger
 
-function deps(overrides: Partial<{ reserved: boolean; existing: unknown }> = {}) {
+function deps(overrides: Partial<{ reserved: boolean; created: boolean; existing: unknown }> = {}) {
   const published: unknown[] = []
+  const deleted: string[] = []
   const stocks = {
     reserve: async () => overrides.reserved ?? true,
     commitReservation: async () => true,
@@ -603,39 +615,43 @@ function deps(overrides: Partial<{ reserved: boolean; existing: unknown }> = {})
     updateStatus: async () => undefined,
   } as unknown as OrdersRepository
   const idempotency = {
-    get: async () => (overrides.existing ?? null),
-    create: async () => undefined,
+    get: async () => overrides.existing ?? null,
+    create: async () => overrides.created ?? true,
     setStatus: async () => undefined,
+    delete: async (key: string) => { deleted.push(key) },
   } as unknown as IdempotencyStore
   const publisher = { publish: (m: unknown) => published.push(m) } as unknown as CheckoutPublisher
-  const runInTransaction = async <T>(fn: (m: unknown) => Promise<T>) => fn({})
+  const runInTransaction = (async (fn: (m: unknown) => Promise<unknown>) => fn({})) as unknown as RunInTransaction
 
-  return { stocks, orders, idempotency, publisher, published, runInTransaction }
+  return { stocks, orders, idempotency, publisher, published, deleted, runInTransaction }
 }
 
 describe('CheckoutService', () => {
   it('reserves, creates order and publishes when stock is available', async () => {
-    const d = deps({ reserved: true })
+    const d = deps({ created: true, reserved: true })
     const service = new CheckoutService(d.stocks, d.orders, d.idempotency, d.publisher, d.runInTransaction)
 
     const result = await service.checkout({ idempotencyKey: 'k1', productId: 'p1', quantity: 2, correlationId: 'r1' }, logger)
 
-    expect(result).toEqual({ orderId: 'o1', conflict: false })
+    expect(result.conflict).toBe(false)
+    expect(typeof result.orderId).toBe('string')
+    expect(result.orderId.length).toBeGreaterThan(0)
     expect(d.published).toHaveLength(1)
   })
 
-  it('returns conflict when reservation fails', async () => {
-    const d = deps({ reserved: false })
+  it('returns conflict and releases the lock when reservation fails', async () => {
+    const d = deps({ created: true, reserved: false })
     const service = new CheckoutService(d.stocks, d.orders, d.idempotency, d.publisher, d.runInTransaction)
 
     const result = await service.checkout({ idempotencyKey: 'k1', productId: 'p1', quantity: 2, correlationId: 'r1' }, logger)
 
     expect(result.conflict).toBe(true)
     expect(d.published).toHaveLength(0)
+    expect(d.deleted).toEqual(['k1'])
   })
 
-  it('is idempotent: returns existing orderId without reserving', async () => {
-    const d = deps({ existing: { status: 'PENDING', orderId: 'existing' } })
+  it('is idempotent: NX create fails, returns existing orderId without reserving', async () => {
+    const d = deps({ created: false, existing: { status: 'PENDING', orderId: 'existing' } })
     const service = new CheckoutService(d.stocks, d.orders, d.idempotency, d.publisher, d.runInTransaction)
 
     const result = await service.checkout({ idempotencyKey: 'k1', productId: 'p1', quantity: 2, correlationId: 'r1' }, logger)
@@ -650,6 +666,8 @@ describe('CheckoutService', () => {
 
 - [ ] **Step 3: Implementar** — `src/http/controllers/orders/checkout/checkout.service.ts`:
 ```ts
+import { randomUUID } from 'node:crypto'
+
 import type { EntityManager } from 'typeorm'
 
 import type { Logger } from '@/config/logger/logger.js'
@@ -682,15 +700,18 @@ export class CheckoutService {
   ) {}
 
   async checkout(input: CheckoutInput, logger: Logger): Promise<CheckoutResult> {
-    const existing = await this.idempotency.get(input.idempotencyKey)
+    const orderId = randomUUID()
+    const created = await this.idempotency.create(input.idempotencyKey, { status: 'PENDING', orderId })
 
-    if (existing) {
-      logger.info('idempotency hit, returning existing order', { orderId: existing.orderId })
+    if (!created) {
+      const existing = await this.idempotency.get(input.idempotencyKey)
 
-      return { orderId: existing.orderId, conflict: false }
+      logger.info('idempotency hit, returning existing order', { orderId: existing?.orderId ?? orderId })
+
+      return { orderId: existing?.orderId ?? orderId, conflict: false }
     }
 
-    const message = await this.runInTransaction(async manager => {
+    const availability = await this.runInTransaction(async manager => {
       const reserved = await this.stocks.reserve(input.productId, input.quantity, manager)
 
       if (!reserved) {
@@ -701,34 +722,33 @@ export class CheckoutService {
 
       logger.info('stock reserved', { quantity: input.quantity })
 
-      const order = await this.orders.create(input.correlationId, manager)
+      await this.orders.create(orderId, input.correlationId, manager)
 
-      logger.info('order created', { orderId: order.id })
+      logger.info('order created', { orderId })
 
-      const availability = await this.stocks.findAvailability(input.productId, manager)
-
-      const payload: CheckoutMessage = {
-        correlationId: input.correlationId,
-        idempotencyKey: input.idempotencyKey,
-        productId: input.productId,
-        reservedQuantity: input.quantity,
-        stockAvailability: availability ?? 0,
-        orderId: order.id,
-      }
-
-      return payload
+      return this.stocks.findAvailability(input.productId, manager)
     })
 
-    if (!message) {
+    if (availability === null) {
+      await this.idempotency.delete(input.idempotencyKey)
+
       return { orderId: '', conflict: true }
     }
 
-    await this.idempotency.create(input.idempotencyKey, { status: 'PENDING', orderId: message.orderId })
+    const message: CheckoutMessage = {
+      correlationId: input.correlationId,
+      idempotencyKey: input.idempotencyKey,
+      productId: input.productId,
+      reservedQuantity: input.quantity,
+      stockAvailability: availability ?? 0,
+      orderId,
+    }
+
     this.publisher.publish(message)
 
-    logger.info('checkout message published', { orderId: message.orderId })
+    logger.info('checkout message published', { orderId })
 
-    return { orderId: message.orderId, conflict: false }
+    return { orderId, conflict: false }
   }
 }
 ```
