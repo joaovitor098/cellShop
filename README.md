@@ -95,6 +95,7 @@ O que foi simplificado em relação à arquitetura alvo:
 - **Cache simples (TypeORM):** SWR, lock distribuído e jitter de TTL não estão implementados. O cache de produtos é direto, sem revalidação em background nem proteção contra cache stampede.
 - **Sem DLQ / retry avançado:** mensagens que falham no worker não são movidas para uma Dead Letter Queue com estratégia de backoff. Se o decremento de estoque falhar no worker, a mensagem é confirmada (ack) e o pedido fica `PENDING`/`PROCESSING` até reconciliação futura.
 - **Idempotência best-effort:** a `idempotency-key` garante que um reenvio **sequencial** (retry/duplo clique) não cria pedido duplicado (checagem no Redis). Submits **simultâneos** com a mesma key não têm lock — fechar essa janela depende do lock distribuído previsto na arquitetura alvo.
+- **TTL da idempotência não é renovado durante o processamento:** a chave no Redis tem TTL fixo e não há _refresh_/heartbeat enquanto o worker processa a mensagem. Se o processamento exceder o TTL, a chave pode expirar e permitir reprocessamento. A renovação do TTL durante o processamento faz parte da arquitetura alvo.
 - **Observabilidade parcial:** apenas traces tanto na pate da vitrine quando no fluxo completo do checkout e logs estruturados com `correlationId`, `orderId`, `productId` e status. Sem métricas exportadas (Prometheus/OTel).
 - **Sem autenticação:** os endpoints não exigem token; o `x-request-id` é usado apenas como correlação.
 
