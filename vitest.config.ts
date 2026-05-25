@@ -7,6 +7,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    fileParallelism: false,
     // reflect-metadata antes de qualquer entity com decorator.
     setupFiles: ['reflect-metadata'],
     // env dummy: env.parse (importado via data-source) exige DATABASE_*.
