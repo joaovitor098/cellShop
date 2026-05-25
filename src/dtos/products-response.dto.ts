@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const productSchema = z.object({
-  id: z.uuid(),
+  id: z.guid(),
   name: z.string(),
   price: z.number().int(),
 })
