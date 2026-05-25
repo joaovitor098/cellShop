@@ -19,7 +19,7 @@ export class LoggingRedisQueryResultCache extends RedisQueryResultCache {
     if (request) {
       const cacheKey = options.identifier ?? options.query ?? 'unknown'
 
-      new Logger(request).info(hit ? 'cache hit' : 'cache miss', { cacheKey })
+      Logger.fromRequest(request).info(hit ? 'cache hit' : 'cache miss', { cacheKey })
     }
 
     return cached

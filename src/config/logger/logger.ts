@@ -1,10 +1,28 @@
 import type { FastifyBaseLogger, FastifyRequest } from 'fastify'
 
-export class Logger {
-  private readonly log: FastifyBaseLogger
+export interface LogContext {
+  reqId?: string
+  correlationId?: string
+  idempotencyKey?: string
+  orderId?: string
+  productId?: string
+  stock?: number
+}
 
-  constructor(request: FastifyRequest) {
-    this.log = request.log
+type Level = 'info' | 'warn' | 'error' | 'debug'
+
+export class Logger {
+  constructor(
+    private readonly log: FastifyBaseLogger,
+    private readonly context: LogContext = {},
+  ) {}
+
+  static fromRequest(request: FastifyRequest, context: LogContext = {}): Logger {
+    return new Logger(request.log, { reqId: request.id, ...context })
+  }
+
+  child(extra: LogContext): Logger {
+    return new Logger(this.log, { ...this.context, ...extra })
   }
 
   info(message: string, data?: unknown): void {
@@ -23,13 +41,9 @@ export class Logger {
     this.write('debug', message, data)
   }
 
-  private write(level: 'info' | 'warn' | 'error' | 'debug', message: string, data?: unknown): void {
-    if (data === undefined) {
-      this.log[level](message)
+  private write(level: Level, message: string, data?: unknown): void {
+    const payload = data === undefined ? { ...this.context } : { ...this.context, data }
 
-      return
-    }
-
-    this.log[level]({ data }, message)
+    this.log[level](payload, message)
   }
 }
