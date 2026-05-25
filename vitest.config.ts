@@ -14,9 +14,12 @@ export default defineConfig({
     env: {
       DATABASE_HOST: 'localhost',
       DATABASE_PORT: '5432',
-      DATABASE_USER: 'test',
-      DATABASE_PASSWORD: 'test',
-      DATABASE_NAME: 'test',
+      DATABASE_USER: 'cellshop',
+      DATABASE_PASSWORD: 'cellshop',
+      DATABASE_NAME: 'cellshop',
+      REDIS_HOST: 'localhost',
+      REDIS_PORT: '6379',
+      RABBITMQ_URL: 'amqp://cellshop:cellshop@localhost:5672',
     },
   },
 })

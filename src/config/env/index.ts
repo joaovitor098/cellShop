@@ -12,6 +12,9 @@ const envSchema = z.object({
   REDIS_PASSWORD: z.string().optional(),
   REDIS_DB_NUMBER: z.coerce.number().default(0),
   CACHE_TTL_MS: z.coerce.number().default(60_000),
+
+  RABBITMQ_URL: z.string(),
+  IDEMPOTENCY_TTL_MS: z.coerce.number().default(86_400_000),
 })
 
 export const env = envSchema.parse(process.env)
