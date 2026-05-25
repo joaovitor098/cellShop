@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+
 import type { EntityManager } from 'typeorm'
 
 import type { Logger } from '@/config/logger/logger.js'
@@ -30,15 +32,18 @@ export class CheckoutService {
   ) {}
 
   async checkout(input: CheckoutInput, logger: Logger): Promise<CheckoutResult> {
-    const existing = await this.idempotency.get(input.idempotencyKey)
+    const orderId = randomUUID()
+    const created = await this.idempotency.create(input.idempotencyKey, { status: 'PENDING', orderId })
 
-    if (existing) {
-      logger.info('idempotency hit, returning existing order', { orderId: existing.orderId })
+    if (!created) {
+      const existing = await this.idempotency.get(input.idempotencyKey)
 
-      return { orderId: existing.orderId, conflict: false }
+      logger.info('idempotency hit, returning existing order', { orderId: existing?.orderId ?? orderId })
+
+      return { orderId: existing?.orderId ?? orderId, conflict: false }
     }
 
-    const message = await this.runInTransaction(async manager => {
+    const availability = await this.runInTransaction(async manager => {
       const reserved = await this.stocks.reserve(input.productId, input.quantity, manager)
 
       if (!reserved) {
@@ -49,33 +54,32 @@ export class CheckoutService {
 
       logger.info('stock reserved', { quantity: input.quantity })
 
-      const order = await this.orders.create(input.correlationId, manager)
+      await this.orders.create(orderId, input.correlationId, manager)
 
-      logger.info('order created', { orderId: order.id })
+      logger.info('order created', { orderId })
 
-      const availability = await this.stocks.findAvailability(input.productId, manager)
-
-      const payload: CheckoutMessage = {
-        correlationId: input.correlationId,
-        idempotencyKey: input.idempotencyKey,
-        productId: input.productId,
-        reservedQuantity: input.quantity,
-        stockAvailability: availability ?? 0,
-        orderId: order.id,
-      }
-
-      return payload
+      return this.stocks.findAvailability(input.productId, manager)
     })
 
-    if (!message) {
+    if (availability === null) {
+      await this.idempotency.delete(input.idempotencyKey)
+
       return { orderId: '', conflict: true }
     }
 
-    await this.idempotency.create(input.idempotencyKey, { status: 'PENDING', orderId: message.orderId })
+    const message: CheckoutMessage = {
+      correlationId: input.correlationId,
+      idempotencyKey: input.idempotencyKey,
+      productId: input.productId,
+      reservedQuantity: input.quantity,
+      stockAvailability: availability ?? 0,
+      orderId,
+    }
+
     this.publisher.publish(message)
 
-    logger.info('checkout message published', { orderId: message.orderId })
+    logger.info('checkout message published', { orderId })
 
-    return { orderId: message.orderId, conflict: false }
+    return { orderId, conflict: false }
   }
 }

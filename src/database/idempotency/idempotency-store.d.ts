@@ -7,6 +7,7 @@ export interface IdempotencyRecord {
 
 export interface IdempotencyStore {
   get(key: string): Promise<IdempotencyRecord | null>
-  create(key: string, record: IdempotencyRecord): Promise<void>
+  create(key: string, record: IdempotencyRecord): Promise<boolean>
   setStatus(key: string, status: IdempotencyStatus): Promise<void>
+  delete(key: string): Promise<void>
 }

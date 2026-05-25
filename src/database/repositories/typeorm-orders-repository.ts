@@ -12,10 +12,10 @@ export class TypeOrmOrdersRepository implements OrdersRepository {
     return this.dataSource.getRepository(Order).findOneBy({ id })
   }
 
-  async create(user: string, manager: EntityManager = this.dataSource.manager): Promise<Order> {
+  async create(orderId: string, user: string, manager: EntityManager = this.dataSource.manager): Promise<Order> {
     const repository = manager.getRepository(Order)
 
-    return repository.save(repository.create({ user, status: 'PENDING' }))
+    return repository.save(repository.create({ id: orderId, user, status: 'PENDING' }))
   }
 
   async updateStatus(id: string, status: OrderStatus, manager: EntityManager = this.dataSource.manager): Promise<void> {

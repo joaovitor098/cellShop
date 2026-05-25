@@ -18,8 +18,10 @@ export class RedisIdempotencyStore implements IdempotencyStore {
     return raw ? (JSON.parse(raw) as IdempotencyRecord) : null
   }
 
-  async create(key: string, record: IdempotencyRecord): Promise<void> {
-    await this.redis.set(this.key(key), JSON.stringify(record), 'PX', this.ttlMs)
+  async create(key: string, record: IdempotencyRecord): Promise<boolean> {
+    const result = await this.redis.set(this.key(key), JSON.stringify(record), 'PX', this.ttlMs, 'NX')
+
+    return result === 'OK'
   }
 
   async setStatus(key: string, status: IdempotencyStatus): Promise<void> {
@@ -28,5 +30,9 @@ export class RedisIdempotencyStore implements IdempotencyStore {
     if (!existing) return
 
     await this.redis.set(this.key(key), JSON.stringify({ ...existing, status }), 'PX', this.ttlMs)
+  }
+
+  async delete(key: string): Promise<void> {
+    await this.redis.del(this.key(key))
   }
 }

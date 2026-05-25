@@ -10,18 +10,20 @@ describe('RedisIdempotencyStore (integration)', () => {
     await redis.quit()
   })
 
-  it('creates, reads and updates status', async () => {
+  it('creates with NX, reads, updates status and deletes', async () => {
     const store = new RedisIdempotencyStore(redis, 60_000)
     const key = randomUUID()
 
     expect(await store.get(key)).toBeNull()
 
-    await store.create(key, { status: 'PENDING', orderId: 'o1' })
+    expect(await store.create(key, { status: 'PENDING', orderId: 'o1' })).toBe(true)
+    expect(await store.create(key, { status: 'PENDING', orderId: 'o2' })).toBe(false)
     expect(await store.get(key)).toEqual({ status: 'PENDING', orderId: 'o1' })
 
     await store.setStatus(key, 'PROCESSED')
     expect(await store.get(key)).toEqual({ status: 'PROCESSED', orderId: 'o1' })
 
-    await redis.del(`idempotency:${key}`)
+    await store.delete(key)
+    expect(await store.get(key)).toBeNull()
   })
 })
