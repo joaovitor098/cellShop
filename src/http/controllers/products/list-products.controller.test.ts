@@ -18,7 +18,7 @@ describe('GET /v1/products', () => {
   it('retorna produtos paginados com pagination', async () => {
     const app = buildApp({
       findPaginated: async () => ({
-        items: [{ id: '11111111-1111-1111-1111-111111111111', name: 'X', price: 100 }],
+        items: [{ id: '11111111-1111-4111-8111-111111111111', name: 'X', price: 100 }],
         total: 40,
       }),
     })
@@ -28,7 +28,7 @@ describe('GET /v1/products', () => {
 
     expect(res.statusCode).toBe(200)
     expect(res.json()).toEqual({
-      data: [{ id: '11111111-1111-1111-1111-111111111111', name: 'X', price: 100 }],
+      data: [{ id: '11111111-1111-4111-8111-111111111111', name: 'X', price: 100 }],
       pagination: { page: 2, limit: 20, total: 40, totalPages: 2 },
     })
 
