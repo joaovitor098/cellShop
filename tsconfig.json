@@ -12,7 +12,8 @@
       "esnext"
     ],
     "types": [
-      "node"
+      "node",
+      "vitest/globals"
     ],
     "sourceMap": true,
     "declaration": true,
