@@ -1,0 +1,25 @@
+{
+  "name": "cellshop",
+  "version": "1.0.0",
+  "description": "Desafio tecnico de um  backend que lista catalogos de produtos e faz o checkout dos pedidos",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx watch src/start-server.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@fastify/swagger": "9.7.0",
+    "@fastify/swagger-ui": "5.2.6",
+    "@types/node": "25.9.1",
+    "@types/typescript": "2.0.0",
+    "fastify-tsconfig": "3.0.0",
+    "typescript": "6.0.3"
+  },
+  "dependencies": {
+    "@fastify/rate-limit": "10.3.0",
+    "fastify": "5.8.5",
+    "fastify-plugin": "5.1.0"
+  }
+}
