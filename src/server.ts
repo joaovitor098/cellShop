@@ -4,7 +4,8 @@ import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 
 import { loggerOptions } from '@/config/logger/index.js'
-import { registerSwagger } from '@/http/docs/swagger/index.js'
+import { registerSwagger } from '@/config/swagger/index.js'
+import { registerRoutes } from '@/http/routes.js'
 
 
 export function server() {
@@ -17,6 +18,7 @@ export function server() {
     app.setSerializerCompiler(serializerCompiler)
 
     registerSwagger(app)
+    app.register(registerRoutes)
 
     app.addHook('onSend', (_request, reply, payload, done) => {
         reply.body = payload
