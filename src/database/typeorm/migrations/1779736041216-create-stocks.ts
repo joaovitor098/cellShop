@@ -7,6 +7,7 @@ export class CreateStocks1779736041216 implements MigrationInterface {
         "id" uuid NOT NULL DEFAULT gen_random_uuid(),
         "product_id" uuid NOT NULL,
         "quantity" integer NOT NULL,
+        reserved integer NOT NULL DEFAULT 0,
         CONSTRAINT "pk_stocks" PRIMARY KEY ("id"),
         CONSTRAINT "uq_stocks_product" UNIQUE ("product_id"),
         CONSTRAINT "fk_stocks_product" FOREIGN KEY ("product_id")

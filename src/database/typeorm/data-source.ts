@@ -1,11 +1,11 @@
+import 'reflect-metadata'
+
 import path from 'node:path'
 import { DataSource } from 'typeorm'
 
 import type { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions.js'
 
 import { env } from '@/config/env/index.js'
-
-import { JitteredRedisQueryResultCache } from './jittered-redis-cache.js'
 
 const TTL_REDIS_MS = 30_000 // 30 s
 
@@ -14,7 +14,6 @@ const cacheOptions: NonNullable<PostgresConnectionOptions['cache']> = {
   alwaysEnabled: false,
   ignoreErrors: false,
   duration: TTL_REDIS_MS,
-  provider: connection => new JitteredRedisQueryResultCache(connection, 'ioredis'),
   options: {
     host: env.REDIS_HOST,
     port: env.REDIS_PORT,

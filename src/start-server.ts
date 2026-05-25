@@ -1,3 +1,5 @@
+import 'reflect-metadata'
+
 import { server } from "./server.js"
 
 function startServer() {
