@@ -8,6 +8,7 @@ import type { PostgresConnectionOptions } from 'typeorm/driver/postgres/Postgres
 import { env } from '@/config/env/index.js'
 import { Order } from '@/database/entities/order.entity.js'
 import { Product } from '@/database/entities/product.entity.js'
+import { Stock } from '@/database/entities/stock.entity.js'
 
 import { LoggingRedisQueryResultCache } from './logging-redis-cache.js'
 
@@ -35,7 +36,7 @@ export function getDataSourceOptions(): PostgresConnectionOptions {
     database: env.DATABASE_NAME,
     synchronize: false,
     dropSchema: false,
-    entities: [Product, Order],
+    entities: [Product, Order, Stock],
     logging: false,
     logger: 'advanced-console',
     migrationsRun: true,
