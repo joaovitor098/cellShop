@@ -29,7 +29,10 @@ async function startWorker() {
     if (!msg) return
 
     const message = JSON.parse(msg.content.toString()) as CheckoutMessage
-    const logger = new Logger(baseLogger as unknown as FastifyBaseLogger)
+    const logger = new Logger(baseLogger as unknown as FastifyBaseLogger, {
+      correlationId: message.correlationId,
+      idempotencyKey: message.idempotencyKey,
+    })
 
     try {
       await processCheckoutMessage(message, { stocks, orders, idempotency, logger })
