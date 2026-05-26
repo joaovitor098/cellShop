@@ -95,7 +95,7 @@ O que foi simplificado em relação à arquitetura alvo:
 - **Cache simples (TypeORM):** SWR, lock distribuído e jitter de TTL não estão implementados. O cache de produtos é direto, sem revalidação em background nem proteção contra cache stampede.
 - **Sem DLQ / retry avançado:** mensagens que falham no worker não são movidas para uma Dead Letter Queue com estratégia de backoff. Se o decremento de estoque falhar no worker, a mensagem é confirmada (ack) e o pedido fica `PENDING`/`PROCESSING` até reconciliação futura.
 - **TTL da idempotência não é renovado durante o processamento:** a chave no Redis tem TTL fixo e não há _refresh_/heartbeat enquanto o worker processa a mensagem. Se o processamento exceder o TTL, a chave pode expirar e permitir reprocessamento. A renovação do TTL durante o processamento faz parte da arquitetura alvo.
-- **Observabilidade parcial:** logs estruturados com `correlationId`/`requestId`, `orderId`, `productId` e status ligando o fluxo inteiro (request → cache → fila → worker) — um **stub de trace via correlação**, não tracing distribuído com spans (OTel). Sem métricas exportadas (Prometheus/OTel): cache hit/miss e os passos do worker saem como logs, dos quais as métricas seriam derivadas.
+- **Observabilidade parcial:** logs estruturados com `correlationId`/`requestId`, `orderId`, `productId` e status ligando o fluxo inteiro (request → cache → fila → worker) — um **stub de trace via correlação**, não tracing distribuído com spans (OTel). Métricas básicas já são exportadas em formato Prometheus (cache hit/miss, desfechos do checkout, processamento do worker, CPU/memória) via `/v1/metrics` na API e no worker; tracing distribuído (OTel/spans) e o conjunto completo de métricas/alertas seguem na arquitetura alvo.
 - **Sem autenticação:** os endpoints não exigem token; o `x-request-id` é usado apenas como correlação.
 
 ---
@@ -141,7 +141,9 @@ A vitrine tolera consistência eventual (dados levemente defasados são aceitáv
 
 A implementação atual emite **logs estruturados** com os campos `correlationId`, `requestId`, `orderId`, `productId`, `status`, quantidade solicitada e estoque atual em todos os fluxos críticos.
 
-**Métricas planejadas (arquitetura alvo):**
+**Métricas (implementado):** foram adicionadas métricas básicas de cache hit/miss e do processamento de checkout e worker para facilitar a observabilidade local, exportadas em formato Prometheus. Incluem desfechos do checkout, unidades de estoque reservadas, pedidos finalizados pelo worker, histograma de latência do checkout e gauge de checkouts em voo, além das métricas padrão de CPU/memória/event-loop. A API expõe em `GET /v1/metrics`. O worker, por ser um processo separado com registry próprio, sobe seu próprio `/v1/metrics` na porta `9100` — então as **métricas do worker também ficam disponíveis** (CPU/memória + `orders_processed_total`). O `prometheus.sample.yml` raspa os dois alvos como jobs distintos.
+
+**Métricas adicionais planejadas (arquitetura alvo):**
 
 - *Counters:* pedidos processados/falha, mensagens processadas, retries, cache hits/misses, chamadas ao ERP.
 - *Gauges:* mensagens na fila e DLQ, CPU/memória, itens em cache.
