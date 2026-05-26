@@ -1,3 +1,5 @@
+import { ordersProcessedCounter } from '@/config/metrics/index.js'
+
 import type { Logger } from '@/config/logger/logger.js'
 import type { IdempotencyStore } from '@/database/idempotency/idempotency-store.js'
 import type { OrdersRepository } from '@/database/repositories/orders-repository.js'
@@ -50,6 +52,8 @@ export async function processCheckoutMessage(message: CheckoutMessage, deps: Wor
   logger.info('order marked processed')
 
   await deps.idempotency.setStatus(message.idempotencyKey, 'PROCESSED')
+
+  ordersProcessedCounter.inc()
 
   logger.info('checkout processed')
 }

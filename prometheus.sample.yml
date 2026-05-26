@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: cellshop-api
+    metrics_path: /v1/metrics
+    static_configs:
+      - targets: ['app:3333']
+        labels:
+          env: dev
+
+  - job_name: cellshop-worker
+    metrics_path: /v1/metrics
+    static_configs:
+      - targets: ['worker:9100']
+        labels:
+          env: dev

@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
 
+import { checkoutDurationHistogram, checkoutOutcomesCounter, checkoutsInFlightGauges, stockReservedCounter } from '@/config/metrics/index.js'
+
 import type { EntityManager } from 'typeorm'
 
 import type { Logger } from '@/config/logger/logger.js'
@@ -32,54 +34,70 @@ export class CheckoutService {
   ) {}
 
   async checkout(input: CheckoutInput, logger: Logger): Promise<CheckoutResult> {
-    const orderId = randomUUID()
-    const created = await this.idempotency.create(input.idempotencyKey, { status: 'PENDING', orderId })
+    const stopTimer = checkoutDurationHistogram.startTimer()
+    checkoutsInFlightGauges.inc()
 
-    if (!created) {
-      const existing = await this.idempotency.get(input.idempotencyKey)
+    try {
+      const orderId = randomUUID()
+      const created = await this.idempotency.create(input.idempotencyKey, { status: 'PENDING', orderId })
 
-      logger.info('idempotency hit, returning existing order', { orderId: existing?.orderId ?? orderId })
+      if (!created) {
+        const existing = await this.idempotency.get(input.idempotencyKey)
 
-      return { orderId: existing?.orderId ?? orderId, conflict: false }
-    }
+        logger.info('idempotency hit, returning existing order', { orderId: existing?.orderId ?? orderId })
 
-    const availability = await this.runInTransaction(async manager => {
-      const reserved = await this.stocks.reserve(input.productId, input.quantity, manager)
+        checkoutOutcomesCounter.inc({ outcome: 'idempotent_replay' })
 
-      if (!reserved) {
-        logger.warn('stock reservation failed')
-
-        return null
+        return { orderId: existing?.orderId ?? orderId, conflict: false }
       }
 
-      logger.info('stock reserved', { quantity: input.quantity })
+      const availability = await this.runInTransaction(async manager => {
+        const reserved = await this.stocks.reserve(input.productId, input.quantity, manager)
 
-      await this.orders.create(orderId, input.correlationId, manager)
+        if (!reserved) {
+          logger.warn('stock reservation failed')
 
-      logger.info('order created', { orderId })
+          return null
+        }
 
-      return this.stocks.findAvailability(input.productId, manager)
-    })
+        logger.info('stock reserved', { quantity: input.quantity })
 
-    if (availability === null) {
-      await this.idempotency.delete(input.idempotencyKey)
+        stockReservedCounter.inc(input.quantity)
 
-      return { orderId: '', conflict: true }
+        await this.orders.create(orderId, input.correlationId, manager)
+
+        logger.info('order created', { orderId })
+
+        return this.stocks.findAvailability(input.productId, manager)
+      })
+
+      if (availability === null) {
+        await this.idempotency.delete(input.idempotencyKey)
+
+        checkoutOutcomesCounter.inc({ outcome: 'conflict' })
+
+        return { orderId: '', conflict: true }
+      }
+
+      const message: CheckoutMessage = {
+        correlationId: input.correlationId,
+        idempotencyKey: input.idempotencyKey,
+        productId: input.productId,
+        reservedQuantity: input.quantity,
+        stockAvailability: availability ?? 0,
+        orderId,
+      }
+
+      this.publisher.publish(message)
+
+      logger.info('checkout message published', { orderId })
+
+      checkoutOutcomesCounter.inc({ outcome: 'accepted' })
+
+      return { orderId, conflict: false }
+    } finally {
+      stopTimer()
+      checkoutsInFlightGauges.dec()
     }
-
-    const message: CheckoutMessage = {
-      correlationId: input.correlationId,
-      idempotencyKey: input.idempotencyKey,
-      productId: input.productId,
-      reservedQuantity: input.quantity,
-      stockAvailability: availability ?? 0,
-      orderId,
-    }
-
-    this.publisher.publish(message)
-
-    logger.info('checkout message published', { orderId })
-
-    return { orderId, conflict: false }
   }
 }

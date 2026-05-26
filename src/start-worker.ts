@@ -1,5 +1,6 @@
 import 'reflect-metadata'
 
+import fastify from 'fastify'
 import { pino } from 'pino'
 
 import { env } from './config/env/index.js'
@@ -9,6 +10,7 @@ import { RedisIdempotencyStore } from './database/idempotency/redis-idempotency-
 import { TypeOrmOrdersRepository } from './database/repositories/typeorm-orders-repository.js'
 import { TypeOrmStocksRepository } from './database/repositories/typeorm-stocks-repository.js'
 import { dataSource } from './database/typeorm/data-source.js'
+import { metricsController } from './http/controllers/metrics/metrics.controller.js'
 import { CHECKOUT_QUEUE, createChannel } from './messaging/checkout-queue.js'
 import { processCheckoutMessage } from './worker/process-checkout-message.js'
 
@@ -20,6 +22,15 @@ async function startWorker() {
 
   const baseLogger = pino()
   const { channel } = await createChannel()
+
+  const appWorker = fastify({ logger: false })
+
+  metricsController(appWorker)
+
+  const appWorkerPort = Number(process.env.WORKER_METRICS_PORT) || 9100
+  await appWorker.listen({ port: appWorkerPort, host: '0.0.0.0' })
+
+  baseLogger.info(`worker metrics on :${appWorkerPort}/v1/metrics`)
 
   const stocks = new TypeOrmStocksRepository(dataSource)
   const orders = new TypeOrmOrdersRepository(dataSource)
