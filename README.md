@@ -95,7 +95,7 @@ O que foi simplificado em relação à arquitetura alvo:
 - **Cache simples (TypeORM):** SWR, lock distribuído e jitter de TTL não estão implementados. O cache de produtos é direto, sem revalidação em background nem proteção contra cache stampede.
 - **Sem DLQ / retry avançado:** mensagens que falham no worker não são movidas para uma Dead Letter Queue com estratégia de backoff. Se o decremento de estoque falhar no worker, a mensagem é confirmada (ack) e o pedido fica `PENDING`/`PROCESSING` até reconciliação futura.
 - **TTL da idempotência não é renovado durante o processamento:** a chave no Redis tem TTL fixo e não há _refresh_/heartbeat enquanto o worker processa a mensagem. Se o processamento exceder o TTL, a chave pode expirar e permitir reprocessamento. A renovação do TTL durante o processamento faz parte da arquitetura alvo.
-- **Observabilidade parcial:** apenas traces tanto na pate da vitrine quando no fluxo completo do checkout e logs estruturados com `correlationId`, `orderId`, `productId` e status. Sem métricas exportadas (Prometheus/OTel).
+- **Observabilidade parcial:** logs estruturados com `correlationId`/`requestId`, `orderId`, `productId` e status ligando o fluxo inteiro (request → cache → fila → worker) — um **stub de trace via correlação**, não tracing distribuído com spans (OTel). Sem métricas exportadas (Prometheus/OTel): cache hit/miss e os passos do worker saem como logs, dos quais as métricas seriam derivadas.
 - **Sem autenticação:** os endpoints não exigem token; o `x-request-id` é usado apenas como correlação.
 
 ---
@@ -160,6 +160,29 @@ A implementação atual emite **logs estruturados** com os campos `correlationId
 | Disponibilidade | > 99,9 % |
 | Taxa de erro | < 1 % |
 
+**Exemplo de dashboard / alerta / runbook (Datadog ou equivalente):**
+
+Painéis do dashboard:
+
+- *Cache* — hit ratio (`hits / (hits + misses)`), derivado dos logs `cache hit`/`cache miss`.
+- *Checkout* — taxa de 202 vs 409, latência P95 do endpoint.
+- *Fila/worker* — profundidade da fila (gauge), tempo de processamento da mensagem (histograma), pedidos `PROCESSED` vs `PENDING`.
+
+Alertas:
+
+| Alerta | Condição | Severidade |
+|---|---|---|
+| Cache frio | `cache_hit_ratio < 0.8` por 5 min | warning |
+| Overselling suspeito | `409 rate > 5%` por 5 min | critical |
+| Worker travado | profundidade da fila crescente por 10 min sem `PROCESSED` | critical |
+
+Runbook — *"Worker travado"*:
+
+1. Conferir RabbitMQ UI (http://localhost:15672) → fila `orders.checkout` acumulando.
+2. Ver logs do serviço `worker` filtrando por `correlationId` da mensagem mais antiga.
+3. Se erro em `stock commit failed`, checar consistência `reserved`/`quantity` no Postgres.
+4. Reiniciar o worker; mensagens são reprocessadas com segurança (idempotência via Redis).
+
 ---
 
 ### Concorrência, estoque e idempotência
@@ -169,12 +192,13 @@ A implementação atual emite **logs estruturados** com os campos `correlationId
 **Estratégia adotada — atomic update condicional:**
 
 ```sql
-UPDATE products
-SET stock = stock - :qty
-WHERE id = :id AND stock >= :qty
+-- Reserva no checkout (síncrono): só reserva se houver disponível
+UPDATE stocks
+SET reserved = reserved + :qty
+WHERE product_id = :id AND quantity - reserved >= :qty
 ```
 
-A validação e o decremento ocorrem na mesma instrução SQL, eliminando a janela de concorrência sem locks explícitos. É a estratégia mais simples e eficiente para decremento de estoque.
+A validação (`quantity - reserved >= :qty`) e o incremento da reserva ocorrem na mesma instrução SQL, eliminando a janela de concorrência sem locks explícitos. O estoque é tratado em duas fases: o checkout **reserva** atomicamente (acima) e o worker **efetiva** depois, decrementando `quantity` e `reserved` na confirmação. É a estratégia mais simples e eficiente para esse fluxo.
 
 **Comparativo de estratégias:**
 
@@ -214,6 +238,6 @@ Resumo das evoluções planejadas sobre a implementação atual:
 | Cache | Cache direto (TypeORM) | Cache-aside + SWR + lock distribuído + jitter |
 | Consistência na publicação | Publish-após-commit | Outbox Pattern (transacional) |
 | Retry / resiliência | Sem DLQ/retry avançado | DLQ + backoff exponencial + alertas |
-| Observabilidade | Logs estruturados + traces distribuídos | Métricas (Prometheus/OTel) + traces distribuídos + SLOs/alertas |
+| Observabilidade | Logs estruturados + correlação por `correlationId` (stub de trace) | Tracing distribuído (OTel/spans) + métricas exportadas (Prometheus/OTel) + SLOs/alertas |
 | Autenticação | Sem auth | JWT ou equivalente |
-| Estoque | Atomic update condicional + Reserva de estoque + | Reserva de estoque + reconciliação periódica com ERP |
+| Estoque | Atomic update condicional (reserva no checkout, commit no worker) | Reserva de estoque + reconciliação periódica com ERP |
