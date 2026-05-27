@@ -7,7 +7,7 @@ export function metricsController(app: FastifyInstance): void {
   app.get('/v1/metrics', {
     schema: {
       tags: [swaggerTags.METRICS],
-      summary: 'mEtrics for monitoring the application',
+      summary: 'metrics for monitoring the application',
     },
   }, async (_request, reply) => {
     reply.header('Content-Type', registry.contentType)
